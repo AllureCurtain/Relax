@@ -4,8 +4,8 @@
 import ray
 
 from relax.backends.sglang.sglang_engine import SGLangEngine
-from relax.core.service import create_placement_group
 from relax.distributed.ray.multi_engine_manager import MultiEngineManager
+from relax.distributed.ray.placement_group import create_placement_group
 from relax.distributed.ray.rollout import _allocate_rollout_engine_addr_and_ports_normal
 from relax.distributed.ray.utils import NOSET_VISIBLE_DEVICES_ENV_VARS_LIST
 from relax.utils.env import Envs
