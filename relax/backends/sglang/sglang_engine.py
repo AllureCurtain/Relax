@@ -336,18 +336,11 @@ def _launch_server_with_patches(server_args: ServerArgs):
     """Top-level picklable ``multiprocessing.Process`` target that applies the
     SGLang patches, each gated by its own env flag so any combination is valid:
 
-    - main process: OPD pre-expanded multimodal patch
-      (``RELAX_OPD_PREEXPANDED_PATCH=1``).
     - scheduler subprocess: routing-replay (``RELAX_OPTIMIZE_ROUTING_REPLAY=1``)
       installs ``_patched_run_scheduler_process``, which applies the
       routing-replay patch unconditionally.
     """
     from sglang.srt.entrypoints.http_server import launch_server
-
-    if Envs.RELAX_OPD_PREEXPANDED_PATCH:
-        from relax.utils.opd.opd_sglang_patch import apply_opd_preexpanded_patch
-
-        apply_opd_preexpanded_patch()
 
     if Envs.RELAX_OPTIMIZE_ROUTING_REPLAY:
         launch_server(server_args, run_scheduler_process_func=_patched_run_scheduler_process)
@@ -391,14 +384,12 @@ def launch_server_process(server_args: ServerArgs) -> multiprocessing.Process:
     # independently (see ``_launch_server_with_patches`` and
     # ``_patched_run_scheduler_process``); any combination is valid:
     #   - RELAX_OPTIMIZE_ROUTING_REPLAY : async D→H routing-replay patch (runtime)
-    #   - RELAX_OPD_PREEXPANDED_PATCH   : OPD pre-expanded multimodal patch (runtime)
     #   - RELAX_OPD_PER_POS_TOKEN_IDS   : OPD per-position token_ids logprob;
     optimize = Envs.RELAX_OPTIMIZE_ROUTING_REPLAY
-    opd_patch = Envs.RELAX_OPD_PREEXPANDED_PATCH
     per_pos = Envs.RELAX_OPD_PER_POS_TOKEN_IDS
     logger.info(
         "Launching SGLang server with independently-gated patches: "
-        f"routing_replay={optimize}, opd_preexpanded={opd_patch}, per_pos_token_ids={per_pos}"
+        f"routing_replay={optimize}, per_pos_token_ids={per_pos}"
     )
 
     p = multiprocessing.Process(target=_launch_server_with_patches, args=(server_args,))
@@ -656,12 +647,9 @@ class SGLangEngine(RayActor):
 
         if Envs.RELAX_OPD_PER_POS_TOKEN_IDS:
             os.environ["RELAX_FORCE_LOGPROBS_BASE64"] = "1"
-            top_k = getattr(self.args, "opd_log_prob_top_k", 0)
-            if top_k:
-                os.environ["RELAX_OPD_TOKEN_IDS_LOGPROB_K"] = str(top_k)
             logger.info(
-                "Set RELAX_FORCE_LOGPROBS_BASE64=1, RELAX_OPD_TOKEN_IDS_LOGPROB_K=%s (topk enabled)",
-                Envs.RELAX_OPD_TOKEN_IDS_LOGPROB_K,
+                "Set RELAX_FORCE_LOGPROBS_BASE64=1 (opd_log_prob_top_k=%s; query K is sent per request)",
+                getattr(self.args, "opd_log_prob_top_k", 0),
             )
 
         # Set SGLang external model/processor package env vars so the spawned
