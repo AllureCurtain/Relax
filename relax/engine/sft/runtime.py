@@ -162,17 +162,20 @@ def validate_preference_args(args: Namespace) -> None:
             raise ValueError("standard DPO requires --enable-weights-backuper for actor/ref snapshots")
 
 
-def should_skip_mtp_only_weight_management(
+def should_skip_sft_weight_management(
     args: Namespace,
     *,
     with_ref: bool = False,
     with_opd_teacher: bool = False,
 ) -> bool:
-    """Return whether a pure MTP-only SFT actor needs no weight snapshots or
-    rollout sync."""
+    """Skip snapshots and rollout sync when offline SFT has no consumer.
+
+    Checkpoint saves and local loss evaluation read the live model. Generation
+    prediction, reference/teacher forwards, and offload still retain their
+    existing weight-management paths.
+    """
     return bool(
-        getattr(args, "mtp_only_training", False)
-        and is_sft_mode(args)
+        is_sft_mode(args)
         and getattr(args, "sft_predict_interval", None) is None
         and not getattr(args, "offload_train", False)
         and not with_ref
