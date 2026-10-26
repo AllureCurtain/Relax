@@ -58,6 +58,7 @@ def test_checkpoint_sync_rotation_follows_successful_save(save_method, rank, fai
         opt_param_scheduler=None,
         role="actor",
         _is_standard_dpo=lambda: False,
+        _flush_resident_sft_parameters=lambda: None,
     )
     if fail:
         with pytest.raises(OSError, match="save failed"):
@@ -127,6 +128,7 @@ def test_checkpoint_async_preserves_recovery_point(save_method, monkeypatch, tmp
         opt_param_scheduler=None,
         role="actor",
         _is_standard_dpo=lambda: False,
+        _flush_resident_sft_parameters=lambda: None,
     )
     if failure == "save":
         with pytest.raises(OSError, match="save failed"):
@@ -193,6 +195,7 @@ def test_checkpoint_async_entry_skips_rotation_without_an_older_commit(
         opt_param_scheduler=None,
         role="actor",
         _is_standard_dpo=lambda: False,
+        _flush_resident_sft_parameters=lambda: None,
     )
     with pytest.raises(OSError, match="save failed"):
         method(actor, 23)
@@ -237,6 +240,7 @@ def test_checkpoint_async_dpo_rotation_requires_sidecar(save_method, monkeypatch
         role="actor",
         _is_standard_dpo=lambda: True,
         _dpo_reference_identity=object(),
+        _flush_resident_sft_parameters=lambda: None,
     )
     fails = failure == "finalize" or (failure == "sidecar" and rank == 0)
     if fails:
